@@ -658,3 +658,41 @@ fn test_unauthorised_resume() {
     let result = client.try_resume_sub(&attacker, &id);
     assert_eq!(result, Err(Ok(NotifyError::NotOwner)));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C32 — test_too_many_topics
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// subscribe() with exactly 10 topics succeeds.
+#[test]
+fn test_ten_topics_succeeds() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let mut topics: Vec<Bytes> = Vec::new(&env);
+    for _ in 0..10 {
+        topics.push_back(Bytes::from_slice(&env, b"topic"));
+    }
+
+    let id = client.subscribe(&owner, &watched, &topics, &Channel::Webhook, &ep, &0u32);
+    assert!(id > 0u64);
+}
+
+/// subscribe() with 11 topics returns TooManyTopics.
+#[test]
+fn test_too_many_topics() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let mut topics: Vec<Bytes> = Vec::new(&env);
+    for _ in 0..11 {
+        topics.push_back(Bytes::from_slice(&env, b"topic"));
+    }
+
+    let result = client.try_subscribe(&owner, &watched, &topics, &Channel::Webhook, &ep, &0u32);
+    assert_eq!(result, Err(Ok(NotifyError::TooManyTopics)));
+}
