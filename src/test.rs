@@ -994,3 +994,55 @@ fn test_renew_sub_not_owner() {
     let result = client.try_renew_sub(&attacker, &id, &100u32);
     assert_eq!(result, Err(Ok(NotifyError::NotOwner)));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C39 — test_list_summaries_by_owner
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// list_summaries_by_owner() returns correct summary fields matching full subscription.
+#[test]
+fn test_list_summaries_by_owner() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    let sub = client.get_sub(&id);
+    let summaries = client.list_summaries_by_owner(&owner);
+
+    assert_eq!(summaries.len(), 1u32);
+    let s = summaries.get(0).unwrap();
+
+    assert_eq!(s.id, id);
+    assert_eq!(s.owner, sub.owner);
+    assert_eq!(s.watched_contract, sub.watched_contract);
+    assert_eq!(s.active, sub.active);
+    assert_eq!(s.channel, sub.channel);
+    assert_eq!(s.expires_at, sub.expires_at);
+}
+
+/// list_summaries_by_owner() returns multiple summaries in insertion order.
+#[test]
+fn test_list_summaries_multiple() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id1 = make_sub(&env, &client, &owner, &watched);
+    let id2 = make_sub(&env, &client, &owner, &watched);
+    let id3 = make_sub(&env, &client, &owner, &watched);
+
+    let summaries = client.list_summaries_by_owner(&owner);
+    assert_eq!(summaries.len(), 3u32);
+    assert_eq!(summaries.get(0).unwrap().id, id1);
+    assert_eq!(summaries.get(1).unwrap().id, id2);
+    assert_eq!(summaries.get(2).unwrap().id, id3);
+}
+
+/// list_summaries_by_owner() returns empty Vec for unknown address.
+#[test]
+fn test_list_summaries_empty_for_unknown_address() {
+    let (env, _admin, client) = setup();
+    let nobody = Address::generate(&env);
+    assert_eq!(client.list_summaries_by_owner(&nobody).len(), 0u32);
+}
