@@ -4,9 +4,9 @@ target/
 # Compiled WASM output (tracked separately in releases, not in source)
 *.wasm
 
-# Cargo lock — excluded for libraries; include for deployed contracts.
-# Remove this line if you want reproducible builds pinned on CI.
-Cargo.lock
+# Cargo lock — committed to lock all transitive dependency versions
+# for reproducible builds on CI with the pinned Rust 1.81.0 toolchain.
+# Cargo.lock
 
 # Editor and IDE files
 .vscode/
