@@ -211,3 +211,102 @@ fn test_cancel_one_leaves_others_intact() {
     assert_eq!(client.try_get_sub(&id2), Err(Ok(NotifyError::SubNotFound)));
     assert_eq!(client.list_by_owner(&owner).len(), 2u32);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C26 — test_pause_and_resume
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// pause_sub() sets active = false.
+#[test]
+fn test_pause_sets_inactive() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    assert!(client.get_sub(&id).active);
+
+    client.pause_sub(&owner, &id);
+    assert!(!client.get_sub(&id).active);
+}
+
+/// resume_sub() sets active = true.
+#[test]
+fn test_resume_sets_active() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    client.pause_sub(&owner, &id);
+    client.resume_sub(&owner, &id);
+    assert!(client.get_sub(&id).active);
+}
+
+/// pause_sub() is idempotent.
+#[test]
+fn test_pause_idempotent() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    client.pause_sub(&owner, &id);
+    client.pause_sub(&owner, &id); // second call must not error
+    assert!(!client.get_sub(&id).active);
+}
+
+/// resume_sub() is idempotent.
+#[test]
+fn test_resume_idempotent() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    client.pause_sub(&owner, &id);
+    client.resume_sub(&owner, &id);
+    client.resume_sub(&owner, &id); // second call must not error
+    assert!(client.get_sub(&id).active);
+}
+
+/// Full cycle: active → paused → active → paused → active.
+#[test]
+fn test_pause_resume_full_cycle() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+
+    client.pause_sub(&owner, &id);
+    assert!(!client.get_sub(&id).active);
+    client.resume_sub(&owner, &id);
+    assert!(client.get_sub(&id).active);
+    client.pause_sub(&owner, &id);
+    assert!(!client.get_sub(&id).active);
+    client.resume_sub(&owner, &id);
+    assert!(client.get_sub(&id).active);
+}
+
+/// pause_sub() on a non-existent ID returns SubNotFound.
+#[test]
+fn test_pause_nonexistent_returns_not_found() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    assert_eq!(
+        client.try_pause_sub(&owner, &999u64),
+        Err(Ok(NotifyError::SubNotFound))
+    );
+}
+
+/// resume_sub() on a non-existent ID returns SubNotFound.
+#[test]
+fn test_resume_nonexistent_returns_not_found() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    assert_eq!(
+        client.try_resume_sub(&owner, &999u64),
+        Err(Ok(NotifyError::SubNotFound))
+    );
+}
