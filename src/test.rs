@@ -310,3 +310,88 @@ fn test_resume_nonexistent_returns_not_found() {
         Err(Ok(NotifyError::SubNotFound))
     );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C27 — test_limit_exceeded
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// When an owner reaches max_per_owner, the next subscribe() returns LimitExceeded.
+#[test]
+fn test_limit_exceeded() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, StellarNotifyContract);
+    let client = StellarNotifyContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    client.initialise(&admin, &2u32, &0u32);
+
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    make_sub(&env, &client, &owner, &watched);
+    make_sub(&env, &client, &owner, &watched);
+
+    let result = client.try_subscribe(
+        &owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &0u32,
+    );
+    assert_eq!(result, Err(Ok(NotifyError::LimitExceeded)));
+}
+
+/// After cancelling one subscription, the owner can subscribe again.
+#[test]
+fn test_limit_freed_after_cancel() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, StellarNotifyContract);
+    let client = StellarNotifyContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    client.initialise(&admin, &2u32, &0u32);
+
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let id1 = make_sub(&env, &client, &owner, &watched);
+    make_sub(&env, &client, &owner, &watched);
+
+    // At limit.
+    assert_eq!(
+        client.try_subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &0u32),
+        Err(Ok(NotifyError::LimitExceeded))
+    );
+
+    client.cancel(&owner, &id1);
+
+    // Now must succeed.
+    let id3 = client.subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &0u32);
+    assert!(id3 > 0u64);
+}
+
+/// Different owners each have their own independent limit.
+#[test]
+fn test_limit_per_owner_independent() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, StellarNotifyContract);
+    let client = StellarNotifyContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    client.initialise(&admin, &1u32, &0u32);
+
+    let owner_a = Address::generate(&env);
+    let owner_b = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    make_sub(&env, &client, &owner_a, &watched);
+    make_sub(&env, &client, &owner_b, &watched);
+
+    assert_eq!(
+        client.try_subscribe(&owner_a, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &0u32),
+        Err(Ok(NotifyError::LimitExceeded))
+    );
+    assert_eq!(
+        client.try_subscribe(&owner_b, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &0u32),
+        Err(Ok(NotifyError::LimitExceeded))
+    );
+}
