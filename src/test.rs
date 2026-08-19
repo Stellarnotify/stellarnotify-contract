@@ -788,3 +788,38 @@ fn test_ttl_no_cap_allows_any_ttl() {
     );
     assert!(id > 0u64);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C35 — test_transfer_admin
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// transfer_admin() gives the new admin full admin rights.
+#[test]
+fn test_transfer_admin() {
+    let (env, admin, client) = setup();
+    let new_admin = Address::generate(&env);
+
+    client.transfer_admin(&admin, &new_admin);
+
+    // Config must reflect the new admin.
+    assert_eq!(client.get_config().admin, new_admin);
+
+    // Old admin can no longer call admin functions.
+    let result = client.try_update_config(&admin, &20u32, &100_000u32);
+    assert_eq!(result, Err(Ok(NotifyError::Unauthorised)));
+
+    // New admin can call admin functions.
+    client.update_config(&new_admin, &25u32, &200_000u32);
+    assert_eq!(client.get_config().max_per_owner, 25u32);
+}
+
+/// transfer_admin() by non-admin returns Unauthorised.
+#[test]
+fn test_transfer_admin_unauthorised() {
+    let (env, _admin, client) = setup();
+    let attacker = Address::generate(&env);
+    let new_admin = Address::generate(&env);
+
+    let result = client.try_transfer_admin(&attacker, &new_admin);
+    assert_eq!(result, Err(Ok(NotifyError::Unauthorised)));
+}
