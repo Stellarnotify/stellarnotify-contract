@@ -1046,3 +1046,52 @@ fn test_list_summaries_empty_for_unknown_address() {
     let nobody = Address::generate(&env);
     assert_eq!(client.list_summaries_by_owner(&nobody).len(), 0u32);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C40 — integration test — full lifecycle
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Full lifecycle: subscribe → pause → resume → cancel in one test.
+#[test]
+fn test_full_lifecycle() {
+    let (env, admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    // 1. Subscribe
+    let id = client.subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &1_000u32);
+    assert_eq!(id, 1u64);
+    assert!(client.get_sub(&id).active);
+
+    // 2. Verify indexes
+    assert_eq!(client.list_by_owner(&owner).len(), 1u32);
+    assert_eq!(client.list_by_contract(&watched).len(), 1u32);
+
+    // 3. Pause
+    client.pause_sub(&owner, &id);
+    assert!(!client.get_sub(&id).active);
+
+    // 4. Resume
+    client.resume_sub(&owner, &id);
+    assert!(client.get_sub(&id).active);
+
+    // 5. Update endpoint
+    let new_ep = Bytes::from_slice(&env, b"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    client.update_endpoint_ref(&owner, &id, &new_ep);
+    assert_eq!(client.get_sub(&id).endpoint_ref, new_ep);
+
+    // 6. Renew TTL
+    client.renew_sub(&owner, &id, &500u32);
+    assert!(client.get_sub(&id).expires_at > 0u32);
+
+    // 7. Admin pauses protocol — existing sub unaffected
+    client.set_paused(&admin, &true);
+    assert!(client.get_sub(&id).active);
+
+    // 8. Cancel
+    client.cancel(&owner, &id);
+    assert_eq!(client.try_get_sub(&id), Err(Ok(NotifyError::SubNotFound)));
+    assert_eq!(client.list_by_owner(&owner).len(), 0u32);
+    assert_eq!(client.list_by_contract(&watched).len(), 0u32);
+}
