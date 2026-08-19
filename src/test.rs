@@ -77,3 +77,62 @@ fn test_get_version() {
     let (_, _, client) = setup();
     assert_eq!(client.get_version(), "0.1.0");
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C24 — test_subscribe_and_get
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Happy path: subscribe() returns a valid ID and get_sub() returns correct fields.
+#[test]
+fn test_subscribe_and_get() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+
+    assert_eq!(id, 1u64, "first subscription ID must be 1");
+
+    let sub = client.get_sub(&id);
+    assert_eq!(sub.owner, owner);
+    assert_eq!(sub.watched_contract, watched);
+    assert!(sub.active);
+    assert_eq!(sub.expires_at, 0u32);
+    assert_eq!(sub.channel, Channel::Webhook);
+}
+
+/// subscribe() with ttl_ledgers > 0 sets expires_at = current_ledger + ttl.
+#[test]
+fn test_subscribe_with_ttl() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let topics: Vec<Bytes> = Vec::new(&env);
+    let endpoint = Bytes::from_slice(
+        &env,
+        b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    );
+
+    let start_ledger = env.ledger().sequence();
+    let ttl: u32 = 5_000;
+    let id = client.subscribe(&owner, &watched, &topics, &Channel::Webhook, &endpoint, &ttl);
+    let sub = client.get_sub(&id);
+
+    assert_eq!(sub.expires_at, start_ledger + ttl);
+}
+
+/// IDs increment correctly across multiple subscriptions.
+#[test]
+fn test_subscribe_id_increments() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id1 = make_sub(&env, &client, &owner, &watched);
+    let id2 = make_sub(&env, &client, &owner, &watched);
+    let id3 = make_sub(&env, &client, &owner, &watched);
+
+    assert_eq!(id1, 1u64);
+    assert_eq!(id2, 2u64);
+    assert_eq!(id3, 3u64);
+}
