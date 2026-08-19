@@ -202,8 +202,8 @@ impl StellarNotifyContract {
     }
 
     /// Return the contract version string (e.g. `"0.1.0"`).
-    pub fn get_version(_env: Env) -> &'static str {
-        CONTRACT_VERSION
+    pub fn get_version(_env: Env) -> soroban_sdk::String {
+        soroban_sdk::String::from_str(&_env, CONTRACT_VERSION)
     }
 
     // ─────────────────────────────────────────────────────────────────────

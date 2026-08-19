@@ -71,8 +71,8 @@ fn test_initialise_config_stored() {
 
 #[test]
 fn test_get_version() {
-    let (_, _, client) = setup();
-    assert_eq!(client.get_version(), "0.1.0");
+    let (env, _, client) = setup();
+    assert_eq!(client.get_version(), soroban_sdk::String::from_str(&env, "0.1.0"));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
