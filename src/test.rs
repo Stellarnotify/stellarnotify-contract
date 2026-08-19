@@ -728,3 +728,63 @@ fn test_update_endpoint_empty_returns_error() {
     let result = client.try_update_endpoint_ref(&owner, &id, &empty_ep);
     assert_eq!(result, Err(Ok(NotifyError::EmptyEndpoint)));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C34 — test_ttl_exceeded
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// subscribe() with ttl_ledgers > max_ttl returns TtlExceeded.
+#[test]
+fn test_ttl_exceeded() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, StellarNotifyContract);
+    let client = StellarNotifyContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    // max_ttl = 1000
+    client.initialise(&admin, &20u32, &1_000u32);
+
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let result = client.try_subscribe(
+        &owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &1_001u32,
+    );
+    assert_eq!(result, Err(Ok(NotifyError::TtlExceeded)));
+}
+
+/// subscribe() with ttl_ledgers == max_ttl succeeds.
+#[test]
+fn test_ttl_at_limit_succeeds() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, StellarNotifyContract);
+    let client = StellarNotifyContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    client.initialise(&admin, &20u32, &1_000u32);
+
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let id = client.subscribe(
+        &owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &1_000u32,
+    );
+    assert!(id > 0u64);
+}
+
+/// subscribe() with max_ttl = 0 allows any TTL.
+#[test]
+fn test_ttl_no_cap_allows_any_ttl() {
+    let (env, _admin, client) = setup(); // max_ttl = 100_000
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    // 99_999 is under the cap — must succeed.
+    let id = client.subscribe(
+        &owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &99_999u32,
+    );
+    assert!(id > 0u64);
+}
