@@ -4,9 +4,8 @@ target/
 # Compiled WASM output (tracked separately in releases, not in source)
 *.wasm
 
-# Cargo lock — committed to lock all transitive dependency versions
-# for reproducible builds on CI with the pinned Rust 1.81.0 toolchain.
-# Cargo.lock
+# Cargo lock — committed to freeze transitive dependency versions
+# for reproducible CI builds with soroban-sdk 22.0.7
 
 # Editor and IDE files
 .vscode/
