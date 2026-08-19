@@ -1,7 +1,1 @@
-# StellarNotify contract — rustfmt configuration
-#
-# Enforced by `cargo fmt --all -- --check` in CI (see .github/workflows/ci.yml).
-# Run `cargo fmt` locally before committing to avoid CI failures.
-
 edition = "2021"
-max_width = 100
