@@ -3,9 +3,12 @@
 //! # TTL Strategy
 //!
 //! Every storage read AND write calls `extend_ttl` to prevent subscriptions
-//! from being silently archived.
+//! from being silently archived (C21).
 //!
 //! - `LEDGERS_TO_LIVE` = 3,110,400 ≈ 180 days at ~5 seconds per ledger.
+//!
+//! Business logic is split across `subscribe.rs` (owner functions) and
+//! `admin.rs` (admin functions). `contract.rs` is a thin delegation layer (C22).
 
 use soroban_sdk::{Address, Env, Vec};
 
