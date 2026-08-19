@@ -921,3 +921,76 @@ fn test_update_endpoint_ref_not_found() {
     let result = client.try_update_endpoint_ref(&owner, &999u64, &new_ep);
     assert_eq!(result, Err(Ok(NotifyError::SubNotFound)));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C38 — test_renew_sub
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// renew_sub() extends expires_at from current expires_at when still live.
+#[test]
+fn test_renew_extends_from_current_expiry() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let initial_ttl: u32 = 100;
+    let start = env.ledger().sequence();
+    let id = client.subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &initial_ttl);
+
+    env.ledger().with_mut(|l| l.sequence_number += 50);
+
+    let add: u32 = 200;
+    client.renew_sub(&owner, &id, &add);
+
+    let sub = client.get_sub(&id);
+    assert_eq!(sub.expires_at, start + initial_ttl + add);
+}
+
+/// renew_sub() on a permanent subscription (expires_at = 0) is a no-op.
+#[test]
+fn test_renew_permanent_subscription_noop() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    assert_eq!(client.get_sub(&id).expires_at, 0u32);
+
+    client.renew_sub(&owner, &id, &5_000u32);
+    assert_eq!(client.get_sub(&id).expires_at, 0u32);
+}
+
+/// renew_sub() extending beyond max_ttl returns TtlExceeded.
+#[test]
+fn test_renew_exceeds_max_ttl() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register_contract(None, StellarNotifyContract);
+    let client = StellarNotifyContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    client.initialise(&admin, &20u32, &1_000u32);
+
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let id = client.subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &500u32);
+
+    let result = client.try_renew_sub(&owner, &id, &600u32);
+    assert_eq!(result, Err(Ok(NotifyError::TtlExceeded)));
+}
+
+/// renew_sub() by non-owner returns NotOwner.
+#[test]
+fn test_renew_sub_not_owner() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let id = client.subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &100u32);
+    let result = client.try_renew_sub(&attacker, &id, &100u32);
+    assert_eq!(result, Err(Ok(NotifyError::NotOwner)));
+}
