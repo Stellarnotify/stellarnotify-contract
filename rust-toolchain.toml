@@ -1,20 +1,4 @@
-# StellarNotify contract — pinned Rust toolchain
-#
-# This file ensures every developer and every CI run uses the exact same
-# Rust version, producing reproducible WASM builds and eliminating
-# "works on my machine" issues caused by toolchain drift.
-#
-# Rust 1.81.0 is the minimum version that ships with a stable soroban-sdk
-# 22.x compatible compiler and produces deterministic WASM output.
-#
-# To upgrade:
-#   1. Change `channel` to the new version.
-#   2. Run `rustup update`.
-#   3. Run `cargo test --features testutils` — all tests must pass.
-#   4. Run `stellar contract build` — verify the WASM builds cleanly.
-#   5. Commit Cargo.lock alongside this file.
-
 [toolchain]
-channel    = "1.81.0"
+channel    = "stable"
 targets    = ["wasm32-unknown-unknown"]
 components = ["rustfmt", "clippy"]
