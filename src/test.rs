@@ -1095,3 +1095,35 @@ fn test_full_lifecycle() {
     assert_eq!(client.list_by_owner(&owner).len(), 0u32);
     assert_eq!(client.list_by_contract(&watched).len(), 0u32);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C41 — fix: remove_from_index handles duplicates safely
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Cancelling a subscription cleans up indexes even when multiple subs exist.
+/// Verifies remove_from_index defensive deduplication does not corrupt the index.
+#[test]
+fn test_cancel_does_not_corrupt_index() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id1 = make_sub(&env, &client, &owner, &watched);
+    let id2 = make_sub(&env, &client, &owner, &watched);
+    let id3 = make_sub(&env, &client, &owner, &watched);
+
+    // Cancel middle subscription.
+    client.cancel(&owner, &id2);
+
+    let owner_ids = client.list_by_owner(&owner);
+    assert_eq!(owner_ids.len(), 2u32);
+    assert!(owner_ids.contains(&id1));
+    assert!(!owner_ids.contains(&id2));
+    assert!(owner_ids.contains(&id3));
+
+    let watcher_ids = client.list_by_contract(&watched);
+    assert_eq!(watcher_ids.len(), 2u32);
+    assert!(watcher_ids.contains(&id1));
+    assert!(!watcher_ids.contains(&id2));
+    assert!(watcher_ids.contains(&id3));
+}
