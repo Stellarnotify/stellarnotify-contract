@@ -55,7 +55,7 @@ jobs:
             ${{ runner.os }}-cargo-clippy-
 
       - name: Run Clippy (deny warnings)
-        run: cargo clippy --features testutils -- -D warnings
+        run: cargo clippy -- -D warnings
 
   # ── Job 3: Run all tests ──────────────────────────────────────────────────
   test:

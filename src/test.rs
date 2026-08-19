@@ -689,7 +689,14 @@ fn test_ten_topics_succeeds() {
         topics.push_back(Bytes::from_slice(&env, b"topic"));
     }
 
-    let id = client.subscribe(&owner, &watched, &topics, &Channel::Webhook, &ep(&env), &0u32);
+    let id = client.subscribe(
+        &owner,
+        &watched,
+        &topics,
+        &Channel::Webhook,
+        &ep(&env),
+        &0u32,
+    );
     assert!(id > 0u64);
 }
 
@@ -704,8 +711,14 @@ fn test_too_many_topics() {
         topics.push_back(Bytes::from_slice(&env, b"topic"));
     }
 
-    let result =
-        client.try_subscribe(&owner, &watched, &topics, &Channel::Webhook, &ep(&env), &0u32);
+    let result = client.try_subscribe(
+        &owner,
+        &watched,
+        &topics,
+        &Channel::Webhook,
+        &ep(&env),
+        &0u32,
+    );
     assert_eq!(result, Err(Ok(NotifyError::TooManyTopics)));
 }
 
