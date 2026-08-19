@@ -696,3 +696,35 @@ fn test_too_many_topics() {
     let result = client.try_subscribe(&owner, &watched, &topics, &Channel::Webhook, &ep, &0u32);
     assert_eq!(result, Err(Ok(NotifyError::TooManyTopics)));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C33 — test_empty_endpoint
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// subscribe() with empty endpoint_ref returns EmptyEndpoint.
+#[test]
+fn test_empty_endpoint() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let empty_ep = Bytes::from_slice(&env, b"");
+
+    let result = client.try_subscribe(
+        &owner, &watched, &Vec::new(&env), &Channel::Webhook, &empty_ep, &0u32,
+    );
+    assert_eq!(result, Err(Ok(NotifyError::EmptyEndpoint)));
+}
+
+/// update_endpoint_ref() with empty endpoint returns EmptyEndpoint.
+#[test]
+fn test_update_endpoint_empty_returns_error() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    let empty_ep = Bytes::from_slice(&env, b"");
+
+    let result = client.try_update_endpoint_ref(&owner, &id, &empty_ep);
+    assert_eq!(result, Err(Ok(NotifyError::EmptyEndpoint)));
+}
