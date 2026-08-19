@@ -614,3 +614,47 @@ fn test_list_by_contract_empty_for_unknown_contract() {
     let nobody = Address::generate(&env);
     assert_eq!(client.list_by_contract(&nobody).len(), 0u32);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C31 — test_unauthorised_cancel
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// cancel() by a non-owner returns NotOwner.
+#[test]
+fn test_unauthorised_cancel() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    let result = client.try_cancel(&attacker, &id);
+    assert_eq!(result, Err(Ok(NotifyError::NotOwner)));
+}
+
+/// pause_sub() by a non-owner returns NotOwner.
+#[test]
+fn test_unauthorised_pause() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    let result = client.try_pause_sub(&attacker, &id);
+    assert_eq!(result, Err(Ok(NotifyError::NotOwner)));
+}
+
+/// resume_sub() by a non-owner returns NotOwner.
+#[test]
+fn test_unauthorised_resume() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    client.pause_sub(&owner, &id);
+    let result = client.try_resume_sub(&attacker, &id);
+    assert_eq!(result, Err(Ok(NotifyError::NotOwner)));
+}
