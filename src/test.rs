@@ -875,3 +875,49 @@ fn test_update_config_success() {
     assert_eq!(config.max_per_owner, 5u32);
     assert_eq!(config.max_ttl, 500u32);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C37 — test_update_endpoint_ref
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// update_endpoint_ref() stores the new endpoint hash on-chain.
+#[test]
+fn test_update_endpoint_ref() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+
+    let new_ep = Bytes::from_slice(&env, b"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    client.update_endpoint_ref(&owner, &id, &new_ep);
+
+    let sub = client.get_sub(&id);
+    assert_eq!(sub.endpoint_ref, new_ep);
+}
+
+/// update_endpoint_ref() by non-owner returns NotOwner.
+#[test]
+fn test_update_endpoint_ref_not_owner() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    let new_ep = Bytes::from_slice(&env, b"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+
+    let result = client.try_update_endpoint_ref(&attacker, &id, &new_ep);
+    assert_eq!(result, Err(Ok(NotifyError::NotOwner)));
+}
+
+/// update_endpoint_ref() on non-existent ID returns SubNotFound.
+#[test]
+fn test_update_endpoint_ref_not_found() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let new_ep = Bytes::from_slice(&env, b"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+
+    let result = client.try_update_endpoint_ref(&owner, &999u64, &new_ep);
+    assert_eq!(result, Err(Ok(NotifyError::SubNotFound)));
+}
