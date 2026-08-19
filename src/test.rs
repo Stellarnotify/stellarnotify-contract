@@ -136,3 +136,78 @@ fn test_subscribe_id_increments() {
     assert_eq!(id2, 2u64);
     assert_eq!(id3, 3u64);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C25 — test_cancel_subscription
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// cancel() removes the subscription — get_sub() returns SubNotFound after.
+#[test]
+fn test_cancel_removes_sub() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    client.cancel(&owner, &id);
+
+    let result = client.try_get_sub(&id);
+    assert_eq!(result, Err(Ok(NotifyError::SubNotFound)));
+}
+
+/// cancel() removes the ID from the owner index.
+#[test]
+fn test_cancel_removes_from_owner_index() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    assert_eq!(client.list_by_owner(&owner).len(), 1u32);
+
+    client.cancel(&owner, &id);
+    assert_eq!(client.list_by_owner(&owner).len(), 0u32);
+}
+
+/// cancel() removes the ID from the watcher index.
+#[test]
+fn test_cancel_removes_from_watcher_index() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    assert_eq!(client.list_by_contract(&watched).len(), 1u32);
+
+    client.cancel(&owner, &id);
+    assert_eq!(client.list_by_contract(&watched).len(), 0u32);
+}
+
+/// cancel() on a non-existent ID returns SubNotFound.
+#[test]
+fn test_cancel_nonexistent_returns_not_found() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+
+    let result = client.try_cancel(&owner, &999u64);
+    assert_eq!(result, Err(Ok(NotifyError::SubNotFound)));
+}
+
+/// Cancelling one subscription does not affect others owned by the same wallet.
+#[test]
+fn test_cancel_one_leaves_others_intact() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id1 = make_sub(&env, &client, &owner, &watched);
+    let id2 = make_sub(&env, &client, &owner, &watched);
+    let id3 = make_sub(&env, &client, &owner, &watched);
+
+    client.cancel(&owner, &id2);
+
+    let _ = client.get_sub(&id1);
+    let _ = client.get_sub(&id3);
+    assert_eq!(client.try_get_sub(&id2), Err(Ok(NotifyError::SubNotFound)));
+    assert_eq!(client.list_by_owner(&owner).len(), 2u32);
+}
