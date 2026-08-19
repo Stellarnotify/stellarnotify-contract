@@ -463,3 +463,76 @@ fn test_set_paused_unauthorised() {
     let result = client.try_set_paused(&attacker, &true);
     assert_eq!(result, Err(Ok(NotifyError::Unauthorised)));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C29 — test_expiry
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// resume_sub() after TTL has passed returns Expired.
+#[test]
+fn test_resume_after_expiry_returns_expired() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let id = client.subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &10u32);
+    client.pause_sub(&owner, &id);
+
+    // Advance past expiry.
+    env.ledger().with_mut(|l| l.sequence_number += 20);
+
+    let result = client.try_resume_sub(&owner, &id);
+    assert_eq!(result, Err(Ok(NotifyError::Expired)));
+}
+
+/// resume_sub() exactly at expiry ledger returns Expired.
+#[test]
+fn test_resume_at_exact_expiry_returns_expired() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let ttl: u32 = 10;
+    let id = client.subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &ttl);
+    client.pause_sub(&owner, &id);
+
+    env.ledger().with_mut(|l| l.sequence_number += ttl);
+
+    assert_eq!(client.try_resume_sub(&owner, &id), Err(Ok(NotifyError::Expired)));
+}
+
+/// resume_sub() one ledger before expiry succeeds.
+#[test]
+fn test_resume_one_ledger_before_expiry_succeeds() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let ttl: u32 = 10;
+    let id = client.subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &ttl);
+    client.pause_sub(&owner, &id);
+
+    env.ledger().with_mut(|l| l.sequence_number += ttl - 1);
+
+    client.resume_sub(&owner, &id);
+    assert!(client.get_sub(&id).active);
+}
+
+/// Permanent subscriptions (expires_at = 0) never expire.
+#[test]
+fn test_permanent_subscription_never_expires() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    assert_eq!(client.get_sub(&id).expires_at, 0u32);
+
+    client.pause_sub(&owner, &id);
+    env.ledger().with_mut(|l| l.sequence_number += 10_000_000);
+    client.resume_sub(&owner, &id);
+    assert!(client.get_sub(&id).active);
+}
