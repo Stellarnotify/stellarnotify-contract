@@ -218,10 +218,7 @@ pub fn remove_from_watcher_index(env: &Env, watched: &Address, id: u64) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Convert a full `Subscription` into a lightweight `SubscriptionSummary`.
-pub fn to_summary(
-    id: u64,
-    sub: &crate::types::Subscription,
-) -> crate::types::SubscriptionSummary {
+pub fn to_summary(id: u64, sub: &crate::types::Subscription) -> crate::types::SubscriptionSummary {
     crate::types::SubscriptionSummary {
         id,
         owner: sub.owner.clone(),

@@ -49,10 +49,8 @@ pub fn sub_resumed(env: &Env, id: u64, owner: &Address) {
 /// Topics : `(symbol "sub_ep", owner)`
 /// Data   : `id`
 pub fn sub_endpoint_updated(env: &Env, id: u64, owner: &Address) {
-    env.events().publish(
-        (symbol_short!("sub_ep"), owner.clone()),
-        id,
-    );
+    env.events()
+        .publish((symbol_short!("sub_ep"), owner.clone()), id);
 }
 
 /// Emitted when a subscription's TTL is extended via `renew_sub()`.
@@ -71,10 +69,8 @@ pub fn sub_renewed(env: &Env, id: u64, owner: &Address, new_expires_at: u32) {
 /// Topics : `(symbol "cfg_upd", admin)`
 /// Data   : `()`
 pub fn config_updated(env: &Env, admin: &Address) {
-    env.events().publish(
-        (symbol_short!("cfg_upd"), admin.clone()),
-        (),
-    );
+    env.events()
+        .publish((symbol_short!("cfg_upd"), admin.clone()), ());
 }
 
 /// Emitted when the protocol is paused or unpaused by the admin.
@@ -82,10 +78,7 @@ pub fn config_updated(env: &Env, admin: &Address) {
 /// Topics : `symbol "proto_ps"`
 /// Data   : `paused (bool)`
 pub fn protocol_paused(env: &Env, paused: bool) {
-    env.events().publish(
-        symbol_short!("proto_ps"),
-        paused,
-    );
+    env.events().publish((symbol_short!("proto_ps"),), paused);
 }
 
 /// Emitted when the admin role is transferred to a new address.
