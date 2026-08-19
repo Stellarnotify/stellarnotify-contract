@@ -20,8 +20,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust 1.81.0 with rustfmt
+        uses: dtolnay/rust-toolchain@1.81.0
         with:
           components: rustfmt
 
@@ -37,8 +37,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust 1.81.0 with clippy
+        uses: dtolnay/rust-toolchain@1.81.0
         with:
           targets: wasm32-unknown-unknown
           components: clippy
@@ -67,8 +67,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust 1.81.0
+        uses: dtolnay/rust-toolchain@1.81.0
         with:
           targets: wasm32-unknown-unknown
 
@@ -96,8 +96,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust 1.81.0
+        uses: dtolnay/rust-toolchain@1.81.0
         with:
           targets: wasm32-unknown-unknown
 

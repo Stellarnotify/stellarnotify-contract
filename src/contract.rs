@@ -82,7 +82,15 @@ impl StellarNotifyContract {
         endpoint_ref: Bytes,
         ttl_ledgers: u32,
     ) -> Result<u64, NotifyError> {
-        sub_mod::subscribe(env, owner, watched_contract, topics, channel, endpoint_ref, ttl_ledgers)
+        sub_mod::subscribe(
+            env,
+            owner,
+            watched_contract,
+            topics,
+            channel,
+            endpoint_ref,
+            ttl_ledgers,
+        )
     }
 
     /// Permanently cancel a subscription and remove it from all storage.
@@ -235,11 +243,7 @@ impl StellarNotifyContract {
     /// # Errors
     /// - [`NotifyError::NotInitialised`] — contract not yet initialised.
     /// - [`NotifyError::Unauthorised`]   — caller is not the current admin.
-    pub fn transfer_admin(
-        env: Env,
-        admin: Address,
-        new_admin: Address,
-    ) -> Result<(), NotifyError> {
+    pub fn transfer_admin(env: Env, admin: Address, new_admin: Address) -> Result<(), NotifyError> {
         admin::transfer_admin(env, admin, new_admin)
     }
 }

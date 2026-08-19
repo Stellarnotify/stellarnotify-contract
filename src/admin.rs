@@ -86,11 +86,7 @@ pub fn set_paused(env: Env, admin: Address, paused: bool) -> Result<(), NotifyEr
 /// # Errors
 /// - [`NotifyError::NotInitialised`] — contract has not been initialised.
 /// - [`NotifyError::Unauthorised`]   — caller does not match stored admin.
-pub fn transfer_admin(
-    env: Env,
-    admin: Address,
-    new_admin: Address,
-) -> Result<(), NotifyError> {
+pub fn transfer_admin(env: Env, admin: Address, new_admin: Address) -> Result<(), NotifyError> {
     admin.require_auth();
     let mut config = storage::get_config(&env)?;
     if config.admin != admin {
