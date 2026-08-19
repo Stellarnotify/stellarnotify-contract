@@ -9,6 +9,7 @@ use crate::errors::NotifyError;
 use crate::events;
 use crate::storage;
 use crate::types::{Channel, Subscription};
+use crate::validation;
 
 /// Create a new subscription.
 ///
@@ -38,22 +39,7 @@ pub fn subscribe(
     owner.require_auth();
     let config = storage::get_config(&env)?;
 
-    // Validation — extracted to validation.rs in C20
-    if config.paused {
-        return Err(NotifyError::Paused);
-    }
-    if topics.len() > 10 {
-        return Err(NotifyError::TooManyTopics);
-    }
-    if endpoint_ref.is_empty() {
-        return Err(NotifyError::EmptyEndpoint);
-    }
-    if config.max_ttl > 0 && ttl_ledgers > config.max_ttl {
-        return Err(NotifyError::TtlExceeded);
-    }
-    if storage::owner_sub_count(&env, &owner) >= config.max_per_owner {
-        return Err(NotifyError::LimitExceeded);
-    }
+    validation::validate_subscribe(&env, &config, &owner, &topics, &endpoint_ref, ttl_ledgers)?;
 
     let id = storage::next_id(&env);
     let expires_at: u32 = if ttl_ledgers == 0 {
