@@ -1,10 +1,11 @@
 # Rust build artifacts
 target/
 
-# Compiled WASM output
+# Compiled WASM output (tracked separately in releases, not in source)
 *.wasm
 
-# Cargo lock
+# Cargo lock — excluded for libraries; include for deployed contracts.
+# Remove this line if you want reproducible builds pinned on CI.
 Cargo.lock
 
 # Editor and IDE files
@@ -17,7 +18,7 @@ Cargo.lock
 # macOS metadata
 .DS_Store
 
-# Environment files
+# Environment files — never commit secrets
 .env
 .env.*
 !.env.example
