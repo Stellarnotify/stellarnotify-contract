@@ -823,3 +823,55 @@ fn test_transfer_admin_unauthorised() {
     let result = client.try_transfer_admin(&attacker, &new_admin);
     assert_eq!(result, Err(Ok(NotifyError::Unauthorised)));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C36 — test_set_paused
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// set_paused(true) pauses the protocol; set_paused(false) unpauses it.
+#[test]
+fn test_set_paused_toggle() {
+    let (_, admin, client) = setup();
+
+    client.set_paused(&admin, &true);
+    assert!(client.get_config().paused);
+
+    client.set_paused(&admin, &false);
+    assert!(!client.get_config().paused);
+}
+
+/// set_paused(true) twice is idempotent.
+#[test]
+fn test_set_paused_twice_idempotent() {
+    let (_, admin, client) = setup();
+    client.set_paused(&admin, &true);
+    client.set_paused(&admin, &true);
+    assert!(client.get_config().paused);
+}
+
+/// set_paused(false) on already-unpaused protocol is idempotent.
+#[test]
+fn test_set_unpaused_idempotent() {
+    let (_, admin, client) = setup();
+    client.set_paused(&admin, &false);
+    assert!(!client.get_config().paused);
+}
+
+/// update_config() by non-admin returns Unauthorised.
+#[test]
+fn test_update_config_unauthorised() {
+    let (env, _admin, client) = setup();
+    let attacker = Address::generate(&env);
+    let result = client.try_update_config(&attacker, &5u32, &500u32);
+    assert_eq!(result, Err(Ok(NotifyError::Unauthorised)));
+}
+
+/// update_config() by admin updates the values correctly.
+#[test]
+fn test_update_config_success() {
+    let (_, admin, client) = setup();
+    client.update_config(&admin, &5u32, &500u32);
+    let config = client.get_config();
+    assert_eq!(config.max_per_owner, 5u32);
+    assert_eq!(config.max_ttl, 500u32);
+}
