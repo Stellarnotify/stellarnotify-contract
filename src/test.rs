@@ -395,3 +395,71 @@ fn test_limit_per_owner_independent() {
         Err(Ok(NotifyError::LimitExceeded))
     );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C28 — test_protocol_pause_blocks_subscribe
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// When the protocol is paused, subscribe() returns Paused.
+#[test]
+fn test_pause_blocks_subscribe() {
+    let (env, admin, client) = setup();
+    client.set_paused(&admin, &true);
+
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let ep = Bytes::from_slice(&env, b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    let result = client.try_subscribe(&owner, &watched, &Vec::new(&env), &Channel::Webhook, &ep, &0u32);
+    assert_eq!(result, Err(Ok(NotifyError::Paused)));
+}
+
+/// Unpausing the protocol allows subscribe() to succeed again.
+#[test]
+fn test_unpause_allows_subscribe() {
+    let (env, admin, client) = setup();
+    client.set_paused(&admin, &true);
+    client.set_paused(&admin, &false);
+
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+    let id = make_sub(&env, &client, &owner, &watched);
+    assert!(id > 0u64);
+}
+
+/// Pausing the protocol does not affect existing subscriptions.
+#[test]
+fn test_protocol_pause_does_not_affect_existing_subs() {
+    let (env, admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id = make_sub(&env, &client, &owner, &watched);
+    client.set_paused(&admin, &true);
+
+    assert!(client.get_sub(&id).active);
+    client.pause_sub(&owner, &id);
+    assert!(!client.get_sub(&id).active);
+    client.resume_sub(&owner, &id);
+    assert!(client.get_sub(&id).active);
+    client.cancel(&owner, &id);
+    assert_eq!(client.try_get_sub(&id), Err(Ok(NotifyError::SubNotFound)));
+}
+
+/// set_paused() is idempotent.
+#[test]
+fn test_set_paused_idempotent() {
+    let (_, admin, client) = setup();
+    client.set_paused(&admin, &true);
+    client.set_paused(&admin, &true);
+    assert!(client.get_config().paused);
+}
+
+/// Non-admin calling set_paused() returns Unauthorised.
+#[test]
+fn test_set_paused_unauthorised() {
+    let (env, _admin, client) = setup();
+    let attacker = Address::generate(&env);
+    let result = client.try_set_paused(&attacker, &true);
+    assert_eq!(result, Err(Ok(NotifyError::Unauthorised)));
+}
