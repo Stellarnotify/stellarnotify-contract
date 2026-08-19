@@ -1,0 +1,105 @@
+# Changelog
+
+All notable changes to `stellarnotify-contract` are documented here.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [0.1.0] — 2026-08-19
+
+### Summary
+
+First production-ready release of the StellarNotify on-chain subscription
+registry. Deployed and verified on Stellar testnet.
+
+### Added
+
+#### Contract functions (16 total)
+
+**Initialisation**
+- `initialise(admin, max_per_owner, max_ttl)` — one-time registry setup with
+  `AlreadyInitialised` guard preventing re-initialisation attacks.
+
+**Subscription management (owner-only)**
+- `subscribe(owner, watched_contract, topics, channel, endpoint_ref, ttl_ledgers)`
+  — create a subscription with topic filtering, channel selection, and optional
+  TTL. Returns a unique `u64` ID starting at 1.
+- `cancel(owner, id)` — permanently delete a subscription and clean up all
+  three storage locations (data, owner index, watcher index).
+- `pause_sub(owner, id)` — soft-pause delivery without losing data. Idempotent.
+- `resume_sub(owner, id)` — re-enable delivery with expiry check. Idempotent.
+- `update_endpoint_ref(owner, id, new_endpoint)` — rotate the webhook URL hash
+  without cancelling the subscription.
+- `renew_sub(owner, id, add_ttl_ledgers)` — extend TTL preserving the
+  subscription ID. Handles live, expired, and permanent subscriptions correctly.
+
+**Query functions (read-only)**
+- `get_sub(id)` — full subscription data with TTL bump on read.
+- `list_by_owner(owner)` — all subscription IDs for a wallet.
+- `list_by_contract(watched)` — all subscription IDs watching a contract.
+- `list_summaries_by_owner(owner)` — lightweight summaries for dashboard
+  display (omits heavy `topics` and `endpoint_ref` fields).
+- `get_config()` — current protocol configuration.
+- `get_version()` — contract version string (`"0.1.0"`).
+
+**Admin functions**
+- `update_config(admin, max_per_owner, max_ttl)` — update protocol limits.
+- `set_paused(admin, paused)` — emergency circuit-breaker. Idempotent.
+- `transfer_admin(admin, new_admin)` — unilateral admin role transfer with
+  on-chain audit trail.
+
+#### Delivery channels
+- `Webhook` — HTTP POST to a privately registered endpoint URL.
+- `InApp` — Server-Sent Events stream via the StellarNotify backend.
+- `OnChain` — re-emitted as a Soroban event; emits `oc_live` on subscribe.
+
+#### Storage
+- Persistent storage with `extend_ttl` on every read and write (~180-day TTL).
+- Instance storage for counter and config.
+- Owner index (`OwnerSubs`) and watcher index (`WatcherSubs`) maintained
+  atomically on subscribe and cancel.
+- Defensive deduplication in both index removal functions.
+
+#### Events (10 total)
+`sub_new`, `sub_cncl`, `sub_paus`, `sub_rsm`, `sub_ep`, `sub_renew`,
+`cfg_upd`, `proto_ps`, `adm_xfr`, `oc_live`
+
+#### Error codes (11 total)
+`AlreadyInitialised`, `NotInitialised`, `Unauthorised`, `SubNotFound`,
+`NotOwner`, `LimitExceeded`, `TtlExceeded`, `Paused`, `Expired`,
+`TooManyTopics`, `EmptyEndpoint`
+
+#### Testing
+- 50+ unit and integration tests across all functions.
+- Full lifecycle integration test: subscribe → pause → resume → update → renew → cancel.
+- Boundary tests for all numeric constraints (TTL, topic count, limits).
+- Auth boundary tests for all owner-only and admin-only functions.
+- Duplicate index removal edge case test.
+
+#### Infrastructure
+- MIT license.
+- GitHub Actions CI: rustfmt → clippy → test → WASM build.
+- `rust-toolchain.toml` pinned to Rust 1.81.0.
+- `soroban-sdk` pinned to exact version `=22.0.7`.
+- `rustfmt.toml` for consistent code formatting.
+- Complete rustdoc on all public functions.
+
+### Security notes
+
+- No fund custody — the contract holds no tokens.
+- Webhook URLs never stored on-chain (SHA-256 hash only).
+- Admin cannot touch individual user subscriptions.
+- TTL bumped on every storage access — no silent archival.
+- Defensive deduplication in index removal prevents ghost entries.
+
+---
+
+## [Unreleased]
+
+### Planned for v0.2.0
+- Batch subscribe — create multiple subscriptions in one transaction.
+- Subscription transfer — owner can transfer a subscription to another wallet.
+- Topic-weighted points for Drips Wave integration.
+- On-chain delivery receipt — confirm the backend dispatched a notification.
