@@ -536,3 +536,81 @@ fn test_permanent_subscription_never_expires() {
     client.resume_sub(&owner, &id);
     assert!(client.get_sub(&id).active);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// C30 — test_list_by_owner_and_contract
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// list_by_owner() returns all IDs for a given owner in insertion order.
+#[test]
+fn test_list_by_owner_returns_all_ids() {
+    let (env, _admin, client) = setup();
+    let owner = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id1 = make_sub(&env, &client, &owner, &watched);
+    let id2 = make_sub(&env, &client, &owner, &watched);
+    let id3 = make_sub(&env, &client, &owner, &watched);
+
+    let ids = client.list_by_owner(&owner);
+    assert_eq!(ids.len(), 3u32);
+    assert_eq!(ids.get(0).unwrap(), id1);
+    assert_eq!(ids.get(1).unwrap(), id2);
+    assert_eq!(ids.get(2).unwrap(), id3);
+}
+
+/// list_by_owner() returns empty Vec for unknown address.
+#[test]
+fn test_list_by_owner_empty_for_unknown_address() {
+    let (env, _admin, client) = setup();
+    let nobody = Address::generate(&env);
+    assert_eq!(client.list_by_owner(&nobody).len(), 0u32);
+}
+
+/// list_by_owner() is isolated per owner.
+#[test]
+fn test_list_by_owner_isolated_per_owner() {
+    let (env, _admin, client) = setup();
+    let owner_a = Address::generate(&env);
+    let owner_b = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id_a1 = make_sub(&env, &client, &owner_a, &watched);
+    let id_a2 = make_sub(&env, &client, &owner_a, &watched);
+    let id_b1 = make_sub(&env, &client, &owner_b, &watched);
+
+    let ids_a = client.list_by_owner(&owner_a);
+    let ids_b = client.list_by_owner(&owner_b);
+
+    assert_eq!(ids_a.len(), 2u32);
+    assert_eq!(ids_b.len(), 1u32);
+    assert!(ids_a.contains(&id_a1));
+    assert!(ids_a.contains(&id_a2));
+    assert!(!ids_a.contains(&id_b1));
+    assert!(ids_b.contains(&id_b1));
+}
+
+/// list_by_contract() returns all IDs watching a given contract.
+#[test]
+fn test_list_by_contract_returns_all_watchers() {
+    let (env, _admin, client) = setup();
+    let owner_a = Address::generate(&env);
+    let owner_b = Address::generate(&env);
+    let watched = Address::generate(&env);
+
+    let id1 = make_sub(&env, &client, &owner_a, &watched);
+    let id2 = make_sub(&env, &client, &owner_b, &watched);
+
+    let watchers = client.list_by_contract(&watched);
+    assert_eq!(watchers.len(), 2u32);
+    assert!(watchers.contains(&id1));
+    assert!(watchers.contains(&id2));
+}
+
+/// list_by_contract() returns empty Vec for unknown contract.
+#[test]
+fn test_list_by_contract_empty_for_unknown_contract() {
+    let (env, _admin, client) = setup();
+    let nobody = Address::generate(&env);
+    assert_eq!(client.list_by_contract(&nobody).len(), 0u32);
+}
