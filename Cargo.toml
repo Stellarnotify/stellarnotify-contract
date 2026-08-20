@@ -29,12 +29,12 @@ codegen-units = 1
 lto = true
 
 [dependencies]
-# Exact pin — see pinning policy note above.
-soroban-sdk = { version = "=22.0.7", features = ["alloc"] }
+# Pinned to latest patch with consistent dependency tree.
+soroban-sdk = { version = "=22.0.11", features = ["alloc"] }
 
 [dev-dependencies]
 # Must match [dependencies] version exactly.
-soroban-sdk = { version = "=22.0.7", features = ["testutils", "alloc"] }
+soroban-sdk = { version = "=22.0.11", features = ["testutils", "alloc"] }
 
 [features]
 testutils = ["soroban-sdk/testutils"]
