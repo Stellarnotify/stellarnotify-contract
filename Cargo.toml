@@ -11,14 +11,8 @@ categories = ["cryptography::cryptocurrencies"]
 
 # ── Dependency pinning policy ─────────────────────────────────────────────────
 # soroban-sdk is pinned to an exact version (= prefix) rather than a semver
-# range. Reasons:
-#   1. Soroban SDK minor/patch releases can introduce breaking ABI changes
-#      that affect deployed WASM binaries.
-#   2. Exact pinning ensures the deployed contract and the version tested in CI
-#      are byte-for-byte identical.
-#   3. To upgrade: change both [dependencies] and [dev-dependencies] to the
-#      new version, run `cargo test --features testutils`, verify all tests
-#      pass, then commit.
+# range. Soroban SDK minor/patch releases can introduce breaking ABI changes.
+# Exact pinning ensures the deployed contract and CI are byte-for-byte identical.
 # ─────────────────────────────────────────────────────────────────────────────
 
 [lib]
@@ -41,6 +35,8 @@ soroban-sdk = { version = "=22.0.7", features = ["alloc"] }
 [dev-dependencies]
 # Must match [dependencies] version exactly.
 soroban-sdk = { version = "=22.0.7", features = ["testutils", "alloc"] }
+# Pin env-host to prevent newer versions pulling in incompatible rand_core.
+soroban-env-host = { version = "=22.0.7" }
 
 [features]
 testutils = ["soroban-sdk/testutils"]
