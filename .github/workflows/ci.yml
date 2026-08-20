@@ -84,7 +84,7 @@ jobs:
             ${{ runner.os }}-cargo-wasm-
 
       - name: Install Stellar CLI
-        run: cargo install --locked stellar-cli --version 23.0.1 --features opt
+        run: cargo install --locked stellar-cli --version 23.0.1
 
       - name: Build contract WASM
         run: stellar contract build
