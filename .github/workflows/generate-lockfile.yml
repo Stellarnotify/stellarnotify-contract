@@ -3,6 +3,9 @@ name: Generate Cargo.lock
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   generate:
     name: Generate and commit Cargo.lock
@@ -21,8 +24,6 @@ jobs:
 
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
-        env:
-          CARGO_TARGET_DIR: /tmp/cargo-target
 
       - name: Commit Cargo.lock
         run: |
