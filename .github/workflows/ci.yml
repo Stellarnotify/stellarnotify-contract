@@ -70,7 +70,7 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown,wasm32v1-none
 
       - name: Cache Cargo registry and build artifacts
         uses: actions/cache@v4
