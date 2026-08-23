@@ -93,12 +93,12 @@ jobs:
 
       - name: Verify WASM output exists
         run: |
-          ls -lh target/wasm32-unknown-unknown/release/stellarnotify_contract.wasm
+          find target -name "stellarnotify_contract.wasm" | head -5
           echo "WASM build successful"
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
         with:
           name: stellarnotify-contract-wasm
-          path: target/wasm32-unknown-unknown/release/stellarnotify_contract.wasm
+          path: target/**/release/stellarnotify_contract.wasm
           retention-days: 7
