@@ -130,6 +130,26 @@ stellar contract invoke \
   --ttl_ledgers 0
 ```
 
+## Client integration examples
+
+Looking to integrate StellarNotify into your application? Check out the [`examples/`](examples/) directory for ready-to-use client code:
+
+- **JavaScript/TypeScript** — Subscribe, query, and manage subscriptions using `@stellar/stellar-sdk`
+- **Rust** — Type-safe client examples using `soroban-sdk` and `stellar-strkey`
+
+Each example includes detailed comments and demonstrates common operations like subscribing to events, querying subscriptions, and managing your notification preferences.
+
+**Quick start:**
+
+```bash
+cd examples/javascript
+npm install
+# Edit configuration in the example files
+node basic-subscribe.js
+```
+
+See [`examples/README.md`](examples/README.md) for full documentation.
+
 ## Project structure
 
 ```
@@ -145,6 +165,23 @@ src/
 ├── datakey.rs      # DataKey enum for storage keys
 ├── errors.rs       # NotifyError enum (11 variants)
 └── test.rs         # Unit and integration tests
+
+examples/
+├── README.md       # Examples overview and setup guide
+├── javascript/     # JavaScript/TypeScript integration examples
+│   ├── basic-subscribe.js
+│   ├── query-subscriptions.js
+│   ├── manage-subscriptions.js
+│   ├── package.json
+│   └── README.md
+└── rust/          # Rust client examples
+    ├── Cargo.toml
+    ├── README.md
+    └── src/
+        ├── basic_subscribe.rs
+        ├── query_subscriptions.rs
+        ├── manage_subscriptions.rs
+        └── admin_operations.rs
 ```
 
 ## Security model

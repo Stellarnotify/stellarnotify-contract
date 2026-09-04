@@ -1,0 +1,37 @@
+[package]
+name = "stellarnotify-examples"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# Soroban SDK for contract interaction
+soroban-sdk = "=22.0.11"
+
+# For address encoding/decoding
+stellar-strkey = "0.0.8"
+
+# SHA-256 hashing for endpoint references
+sha2 = "0.10"
+
+# Hex encoding for endpoint references
+hex = "0.4"
+
+# For error handling
+anyhow = "1.0"
+
+[[example]]
+name = "basic_subscribe"
+path = "src/basic_subscribe.rs"
+
+[[example]]
+name = "query_subscriptions"
+path = "src/query_subscriptions.rs"
+
+[[example]]
+name = "manage_subscriptions"
+path = "src/manage_subscriptions.rs"
+
+[[example]]
+name = "admin_operations"
+path = "src/admin_operations.rs"

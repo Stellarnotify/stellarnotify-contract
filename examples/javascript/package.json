@@ -1,0 +1,26 @@
+{
+  "name": "stellarnotify-contract-examples",
+  "version": "0.1.0",
+  "description": "JavaScript/TypeScript examples for StellarNotify contract integration",
+  "type": "module",
+  "scripts": {
+    "basic-subscribe": "node basic-subscribe.js",
+    "manage": "node manage-subscriptions.js",
+    "query": "node query-subscriptions.js"
+  },
+  "keywords": [
+    "stellar",
+    "soroban",
+    "stellarnotify",
+    "notifications"
+  ],
+  "dependencies": {
+    "@stellar/stellar-sdk": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
