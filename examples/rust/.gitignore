@@ -1,0 +1,13 @@
+# Rust build artifacts
+/target/
+Cargo.lock
+
+# Generated bindings
+/bindings/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

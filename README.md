@@ -167,15 +167,21 @@ src/
 └── test.rs         # Unit and integration tests
 
 examples/
+├── README.md       # Examples overview and setup guide
 ├── javascript/     # JavaScript/TypeScript integration examples
 │   ├── basic-subscribe.js
 │   ├── query-subscriptions.js
-│   └── manage-subscriptions.js
+│   ├── manage-subscriptions.js
+│   ├── package.json
+│   └── README.md
 └── rust/          # Rust client examples
+    ├── Cargo.toml
+    ├── README.md
     └── src/
         ├── basic_subscribe.rs
         ├── query_subscriptions.rs
-        └── manage_subscriptions.rs
+        ├── manage_subscriptions.rs
+        └── admin_operations.rs
 ```
 
 ## Security model

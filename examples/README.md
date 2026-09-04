@@ -9,13 +9,18 @@ examples/
 ├── javascript/        # JavaScript/TypeScript examples using Stellar SDK
 │   ├── basic-subscribe.js
 │   ├── manage-subscriptions.js
-│   └── query-subscriptions.js
+│   ├── query-subscriptions.js
+│   ├── package.json
+│   └── README.md
 └── rust/             # Rust client examples
     ├── Cargo.toml
+    ├── .gitignore
+    ├── README.md
     └── src/
         ├── basic_subscribe.rs
+        ├── query_subscriptions.rs
         ├── manage_subscriptions.rs
-        └── query_subscriptions.rs
+        └── admin_operations.rs
 ```
 
 ## Prerequisites
@@ -32,7 +37,7 @@ examples/
 
 ## Quick Start
 
-### JavaScript
+### JavaScript/TypeScript
 
 ```bash
 cd examples/javascript
@@ -41,13 +46,17 @@ npm install
 node basic-subscribe.js
 ```
 
+See [javascript/README.md](javascript/README.md) for detailed documentation.
+
 ### Rust
 
 ```bash
 cd examples/rust
-cargo build
+cargo build --examples
 cargo run --example basic_subscribe
 ```
+
+See [rust/README.md](rust/README.md) for detailed documentation.
 
 ## Common Operations
 
@@ -56,7 +65,11 @@ All examples demonstrate the following operations:
 1. **Subscribing** - Create a new subscription to watch contract events
 2. **Querying** - Retrieve subscription details and lists
 3. **Managing** - Pause, resume, renew, and cancel subscriptions
-4. **Admin** - Initialize and configure the contract (admin only)
+4. **Admin** (Rust only) - Initialize and configure the contract (admin only)
+
+Each language implementation includes:
+- **JavaScript**: 3 examples covering subscribe, query, and manage operations
+- **Rust**: 4 examples including admin operations for protocol management
 
 ## Contract Addresses
 
