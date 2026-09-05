@@ -47,6 +47,7 @@ subscribes to on behalf of all registered wallets.
 | `resume_sub(owner, id)` | Resume a paused subscription |
 | `update_endpoint_ref(owner, id, new_endpoint)` | Rotate the webhook URL hash |
 | `renew_sub(owner, id, add_ttl_ledgers)` | Extend TTL without cancelling |
+| `transfer_sub(current_owner, new_owner, id)` | Transfer subscription to another wallet (requires dual authorization) |
 
 ### Queries (read-only)
 | Function | Description |
@@ -159,6 +160,22 @@ stellar contract invoke \
     }
   ]'
 ```
+
+Transfer subscription ownership:
+
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --source CURRENT_OWNER_SECRET \
+  --source-account NEW_OWNER_ADDRESS \
+  --network testnet \
+  -- transfer_sub \
+  --current_owner CURRENT_OWNER_ADDRESS \
+  --new_owner NEW_OWNER_ADDRESS \
+  --id <SUBSCRIPTION_ID>
+```
+
+Note: Both current and new owners must sign the transfer transaction.
 
 ## Client integration examples
 

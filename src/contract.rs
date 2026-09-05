@@ -7,7 +7,8 @@
 //! |--------------|-------------------------------------------------------|
 //! | `admin`      | initialise, update_config, set_paused, transfer_admin |
 //! | `subscribe`  | subscribe, batch_subscribe, cancel, pause_sub,        |
-//! |              | resume_sub, update_endpoint_ref, renew_sub            |
+//! |              | resume_sub, update_endpoint_ref, renew_sub,           |
+//! |              | transfer_sub                                          |
 //! | `storage`    | raw persistent/instance read-write helpers            |
 //! | `validation` | subscribe() input validation                          |
 //! | `events`     | Soroban event emission helpers                        |
@@ -178,6 +179,28 @@ impl StellarNotifyContract {
         add_ttl_ledgers: u32,
     ) -> Result<(), NotifyError> {
         sub_mod::renew_sub(env, owner, id, add_ttl_ledgers)
+    }
+
+    /// Transfer ownership of a subscription to a new address.
+    ///
+    /// Both the current owner and the new owner must authorize this operation.
+    ///
+    /// # Parameters
+    /// - `current_owner` — current owner (must sign to release).
+    /// - `new_owner`     — new owner (must sign to accept).
+    /// - `id`            — subscription ID to transfer.
+    ///
+    /// # Errors
+    /// - [`NotifyError::SubNotFound`]   — no subscription with this ID.
+    /// - [`NotifyError::NotOwner`]      — caller is not the current owner.
+    /// - [`NotifyError::LimitExceeded`] — new owner reached `max_per_owner`.
+    pub fn transfer_sub(
+        env: Env,
+        current_owner: Address,
+        new_owner: Address,
+        id: u64,
+    ) -> Result<(), NotifyError> {
+        sub_mod::transfer_sub(env, current_owner, new_owner, id)
     }
 
     // ─────────────────────────────────────────────────────────────────────

@@ -101,7 +101,6 @@ registry. Deployed and verified on Stellar testnet.
 ## [Unreleased]
 
 ### Planned for v0.2.0
-- Subscription transfer — owner can transfer a subscription to another wallet.
 - Topic-weighted points for Drips Wave integration.
 - On-chain delivery receipt — confirm the backend dispatched a notification.
 
