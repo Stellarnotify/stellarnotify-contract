@@ -265,3 +265,53 @@ pub fn renew_sub(
     events::sub_renewed(&env, id, &owner, new_expires_at);
     Ok(())
 }
+
+/// Transfer ownership of a subscription to a new address.
+///
+/// Both the current owner and the new owner must authorize this operation.
+/// All indexes are updated atomically.
+///
+/// # Parameters
+/// - `current_owner` — current owner who must sign to release the subscription.
+/// - `new_owner`     — new owner who must sign to accept the subscription.
+/// - `id`            — subscription ID to transfer.
+///
+/// # Errors
+/// - [`NotifyError::SubNotFound`]   — no subscription exists with this ID.
+/// - [`NotifyError::NotOwner`]      — caller is not the current owner.
+/// - [`NotifyError::LimitExceeded`] — new owner has reached `max_per_owner`.
+pub fn transfer_sub(
+    env: Env,
+    current_owner: Address,
+    new_owner: Address,
+    id: u64,
+) -> Result<(), NotifyError> {
+    // Both parties must authorize
+    current_owner.require_auth();
+    new_owner.require_auth();
+
+    // Load subscription and verify current owner
+    let mut sub = storage::get_sub(&env, id)?;
+    if sub.owner != current_owner {
+        return Err(NotifyError::NotOwner);
+    }
+
+    // Check that new owner hasn't reached their limit
+    let config = storage::get_config(&env)?;
+    if storage::owner_sub_count(&env, &new_owner) >= config.max_per_owner {
+        return Err(NotifyError::LimitExceeded);
+    }
+
+    // Update owner indexes
+    storage::remove_from_owner_index(&env, &current_owner, id);
+    storage::add_to_owner_index(&env, &new_owner, id);
+
+    // Update subscription owner
+    sub.owner = new_owner.clone();
+    storage::save_sub(&env, id, &sub);
+
+    // Emit transfer event
+    events::sub_transferred(&env, id, &current_owner, &new_owner);
+
+    Ok(())
+}
