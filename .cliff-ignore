@@ -1,0 +1,27 @@
+# Patterns to ignore when generating changelog
+# One pattern per line
+
+# Ignore merge commits
+^Merge
+
+# Ignore WIP commits
+^wip
+^WIP
+
+# Ignore temporary commits
+^tmp
+^temp
+
+# Ignore formatting-only commits
+^fmt
+^format
+
+# Ignore dependency updates without changes
+^deps: bump
+
+# Ignore automated commits
+^chore\(deps\)
+^chore\(release\)
+
+# Ignore typo fixes in docs
+^docs: fix typo
