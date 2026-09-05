@@ -78,3 +78,19 @@ pub struct ProtocolConfig {
     /// When true, no new subscriptions can be created.
     pub paused: bool,
 }
+
+/// Parameters for a single subscription in a batch operation.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct BatchSubscribeParams {
+    /// The Soroban contract address whose events are being watched.
+    pub watched_contract: Address,
+    /// Optional list of event topic prefixes to filter on.
+    pub topics: Vec<Bytes>,
+    /// How the notification should be delivered.
+    pub channel: Channel,
+    /// SHA-256 hex hash of the webhook URL.
+    pub endpoint_ref: Bytes,
+    /// Ledgers until expiry. 0 = no expiry.
+    pub ttl_ledgers: u32,
+}

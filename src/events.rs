@@ -96,3 +96,14 @@ pub fn onchain_sub_activated(env: &Env, id: u64, owner: &Address, watched: &Addr
         (id, watched.clone()),
     );
 }
+
+/// Emitted when a subscription is transferred from one owner to another.
+///
+/// Topics : `(symbol "sub_xfr", old_owner)`
+/// Data   : `(id, new_owner)`
+pub fn sub_transferred(env: &Env, id: u64, old_owner: &Address, new_owner: &Address) {
+    env.events().publish(
+        (symbol_short!("sub_xfr"), old_owner.clone()),
+        (id, new_owner.clone()),
+    );
+}

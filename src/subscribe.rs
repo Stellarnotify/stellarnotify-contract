@@ -8,7 +8,7 @@ use soroban_sdk::{Address, Bytes, Env, Vec};
 use crate::errors::NotifyError;
 use crate::events;
 use crate::storage;
-use crate::types::{Channel, Subscription};
+use crate::types::{BatchSubscribeParams, Channel, Subscription};
 use crate::validation;
 
 /// Create a new subscription.
@@ -69,6 +69,70 @@ pub fn subscribe(
     }
 
     Ok(id)
+}
+
+/// Create multiple subscriptions in a single transaction.
+///
+/// All-or-nothing semantics: if any subscription fails validation,
+/// the entire batch is rejected and no subscriptions are created.
+///
+/// # Parameters
+/// - `owner`       — wallet that owns all subscriptions in the batch.
+/// - `params_list` — vector of subscription parameters (max 10 entries).
+///
+/// # Returns
+/// Vector of newly created subscription IDs in the same order as input.
+///
+/// # Errors
+/// `NotInitialised` | `Paused` | `TooManyTopics` | `EmptyEndpoint` |
+/// `TtlExceeded` | `LimitExceeded`
+pub fn batch_subscribe(
+    env: Env,
+    owner: Address,
+    params_list: Vec<BatchSubscribeParams>,
+) -> Result<Vec<u64>, NotifyError> {
+    owner.require_auth();
+    let config = storage::get_config(&env)?;
+
+    // All-or-nothing validation
+    validation::validate_batch_subscribe(&env, &config, &owner, &params_list)?;
+
+    let mut subscription_ids = Vec::new(&env);
+    let current_ledger = env.ledger().sequence();
+
+    // Create all subscriptions
+    for params in params_list.iter() {
+        let id = storage::next_id(&env);
+        let expires_at: u32 = if params.ttl_ledgers == 0 {
+            0
+        } else {
+            current_ledger + params.ttl_ledgers
+        };
+
+        let sub = Subscription {
+            owner: owner.clone(),
+            watched_contract: params.watched_contract.clone(),
+            topics: params.topics.clone(),
+            channel: params.channel.clone(),
+            endpoint_ref: params.endpoint_ref.clone(),
+            active: true,
+            created_at: current_ledger,
+            expires_at,
+        };
+
+        storage::save_sub(&env, id, &sub);
+        storage::add_to_owner_index(&env, &owner, id);
+        storage::add_to_watcher_index(&env, &params.watched_contract, id);
+        events::sub_created(&env, id, &owner, &params.watched_contract);
+
+        if params.channel == Channel::OnChain {
+            events::onchain_sub_activated(&env, id, &owner, &params.watched_contract);
+        }
+
+        subscription_ids.push_back(id);
+    }
+
+    Ok(subscription_ids)
 }
 
 /// Permanently cancel a subscription and remove it from all storage.
@@ -199,5 +263,55 @@ pub fn renew_sub(
     sub.expires_at = new_expires_at;
     storage::save_sub(&env, id, &sub);
     events::sub_renewed(&env, id, &owner, new_expires_at);
+    Ok(())
+}
+
+/// Transfer ownership of a subscription to a new address.
+///
+/// Both the current owner and the new owner must authorize this operation.
+/// All indexes are updated atomically.
+///
+/// # Parameters
+/// - `current_owner` — current owner who must sign to release the subscription.
+/// - `new_owner`     — new owner who must sign to accept the subscription.
+/// - `id`            — subscription ID to transfer.
+///
+/// # Errors
+/// - [`NotifyError::SubNotFound`]   — no subscription exists with this ID.
+/// - [`NotifyError::NotOwner`]      — caller is not the current owner.
+/// - [`NotifyError::LimitExceeded`] — new owner has reached `max_per_owner`.
+pub fn transfer_sub(
+    env: Env,
+    current_owner: Address,
+    new_owner: Address,
+    id: u64,
+) -> Result<(), NotifyError> {
+    // Both parties must authorize
+    current_owner.require_auth();
+    new_owner.require_auth();
+
+    // Load subscription and verify current owner
+    let mut sub = storage::get_sub(&env, id)?;
+    if sub.owner != current_owner {
+        return Err(NotifyError::NotOwner);
+    }
+
+    // Check that new owner hasn't reached their limit
+    let config = storage::get_config(&env)?;
+    if storage::owner_sub_count(&env, &new_owner) >= config.max_per_owner {
+        return Err(NotifyError::LimitExceeded);
+    }
+
+    // Update owner indexes
+    storage::remove_from_owner_index(&env, &current_owner, id);
+    storage::add_to_owner_index(&env, &new_owner, id);
+
+    // Update subscription owner
+    sub.owner = new_owner.clone();
+    storage::save_sub(&env, id, &sub);
+
+    // Emit transfer event
+    events::sub_transferred(&env, id, &current_owner, &new_owner);
+
     Ok(())
 }

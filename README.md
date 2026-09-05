@@ -41,11 +41,13 @@ subscribes to on behalf of all registered wallets.
 | Function | Description |
 |---|---|
 | `subscribe(owner, watched_contract, topics, channel, endpoint_ref, ttl_ledgers)` | Create a subscription, returns `u64` ID |
+| `batch_subscribe(owner, params_list)` | Create multiple subscriptions in one transaction, returns `Vec<u64>` |
 | `cancel(owner, id)` | Permanently delete a subscription |
 | `pause_sub(owner, id)` | Pause deliveries — keep data |
 | `resume_sub(owner, id)` | Resume a paused subscription |
 | `update_endpoint_ref(owner, id, new_endpoint)` | Rotate the webhook URL hash |
 | `renew_sub(owner, id, add_ttl_ledgers)` | Extend TTL without cancelling |
+| `transfer_sub(current_owner, new_owner, id)` | Transfer subscription to another wallet (requires dual authorization) |
 
 ### Queries (read-only)
 | Function | Description |
@@ -116,6 +118,8 @@ stellar contract invoke \
 
 ## Create your first subscription
 
+Single subscription:
+
 ```bash
 stellar contract invoke \
   --id <CONTRACT_ID> \
@@ -129,6 +133,49 @@ stellar contract invoke \
   --endpoint_ref '<SHA256_HEX_OF_YOUR_URL>' \
   --ttl_ledgers 0
 ```
+
+Batch subscription (create multiple at once):
+
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --source YOUR_ADDRESS \
+  --network testnet \
+  -- batch_subscribe \
+  --owner YOUR_ADDRESS \
+  --params_list '[
+    {
+      "watched_contract": "<CONTRACT_1>",
+      "topics": [],
+      "channel": {"Webhook": null},
+      "endpoint_ref": "<SHA256_HEX_1>",
+      "ttl_ledgers": 0
+    },
+    {
+      "watched_contract": "<CONTRACT_2>",
+      "topics": [],
+      "channel": {"InApp": null},
+      "endpoint_ref": "<SHA256_HEX_2>",
+      "ttl_ledgers": 1000000
+    }
+  ]'
+```
+
+Transfer subscription ownership:
+
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --source CURRENT_OWNER_SECRET \
+  --source-account NEW_OWNER_ADDRESS \
+  --network testnet \
+  -- transfer_sub \
+  --current_owner CURRENT_OWNER_ADDRESS \
+  --new_owner NEW_OWNER_ADDRESS \
+  --id <SUBSCRIPTION_ID>
+```
+
+Note: Both current and new owners must sign the transfer transaction.
 
 ## Client integration examples
 
@@ -191,6 +238,10 @@ examples/
 - **Admin isolation** — the admin can update limits and pause the protocol, but cannot touch individual user subscriptions.
 - **Endpoint privacy** — webhook URLs are never stored on-chain. Only the SHA-256 hash is stored.
 - **TTL management** — every storage read and write bumps TTL to prevent accidental archival.
+
+## Contributing
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated changelog generation. See [.github/CHANGELOG_AUTOMATION.md](.github/CHANGELOG_AUTOMATION.md) for details.
 
 ## Related repos
 
