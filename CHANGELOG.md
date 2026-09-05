@@ -101,7 +101,6 @@ registry. Deployed and verified on Stellar testnet.
 ## [Unreleased]
 
 ### Planned for v0.2.0
-- Batch subscribe — create multiple subscriptions in one transaction.
 - Subscription transfer — owner can transfer a subscription to another wallet.
 - Topic-weighted points for Drips Wave integration.
 - On-chain delivery receipt — confirm the backend dispatched a notification.

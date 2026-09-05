@@ -6,8 +6,8 @@
 //! | Module       | Responsibility                                        |
 //! |--------------|-------------------------------------------------------|
 //! | `admin`      | initialise, update_config, set_paused, transfer_admin |
-//! | `subscribe`  | subscribe, cancel, pause_sub, resume_sub,             |
-//! |              | update_endpoint_ref, renew_sub                        |
+//! | `subscribe`  | subscribe, batch_subscribe, cancel, pause_sub,        |
+//! |              | resume_sub, update_endpoint_ref, renew_sub            |
 //! | `storage`    | raw persistent/instance read-write helpers            |
 //! | `validation` | subscribe() input validation                          |
 //! | `events`     | Soroban event emission helpers                        |
@@ -18,7 +18,7 @@ use crate::admin;
 use crate::errors::NotifyError;
 use crate::storage;
 use crate::subscribe as sub_mod;
-use crate::types::{Channel, ProtocolConfig, Subscription, SubscriptionSummary};
+use crate::types::{BatchSubscribeParams, Channel, ProtocolConfig, Subscription, SubscriptionSummary};
 
 /// Semantic version of this contract. Updated on each release commit.
 const CONTRACT_VERSION: &str = "0.1.0";
@@ -91,6 +91,29 @@ impl StellarNotifyContract {
             endpoint_ref,
             ttl_ledgers,
         )
+    }
+
+    /// Create multiple subscriptions in a single transaction.
+    ///
+    /// All-or-nothing semantics: if any subscription fails validation,
+    /// the entire batch is rejected and no subscriptions are created.
+    ///
+    /// # Parameters
+    /// - `owner`       — wallet that owns all subscriptions (must sign).
+    /// - `params_list` — vector of subscription parameters. Max 10 entries.
+    ///
+    /// # Returns
+    /// Vector of subscription IDs in the same order as input.
+    ///
+    /// # Errors
+    /// `NotInitialised` | `Paused` | `TooManyTopics` | `EmptyEndpoint` |
+    /// `TtlExceeded` | `LimitExceeded`
+    pub fn batch_subscribe(
+        env: Env,
+        owner: Address,
+        params_list: Vec<BatchSubscribeParams>,
+    ) -> Result<Vec<u64>, NotifyError> {
+        sub_mod::batch_subscribe(env, owner, params_list)
     }
 
     /// Permanently cancel a subscription and remove it from all storage.
