@@ -192,6 +192,10 @@ examples/
 - **Endpoint privacy** — webhook URLs are never stored on-chain. Only the SHA-256 hash is stored.
 - **TTL management** — every storage read and write bumps TTL to prevent accidental archival.
 
+## Contributing
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated changelog generation. See [.github/CHANGELOG_AUTOMATION.md](.github/CHANGELOG_AUTOMATION.md) for details.
+
 ## Related repos
 
 - [stellarnotify-backend](https://github.com/Stellarnotify/stellarnotify-backend) — event ingester, webhook dispatcher, SSE broadcaster
