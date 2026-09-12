@@ -197,6 +197,84 @@ node basic-subscribe.js
 
 See [`examples/README.md`](examples/README.md) for full documentation.
 
+## Error handling
+
+The StellarNotify contract returns structured error codes to help clients handle failures gracefully. Every error is a numeric code that can be matched in your client code.
+
+### Error codes reference
+
+| Code | Error | Description | Common causes |
+|------|-------|-------------|---------------|
+| `1` | `AlreadyInitialised` | Contract has already been initialised | Calling `initialise()` more than once |
+| `2` | `NotInitialised` | Contract not yet initialised | Calling functions before `initialise()` |
+| `3` | `Unauthorised` | Caller is not the admin | Non-admin calling admin-only functions |
+| `4` | `SubNotFound` | Subscription ID does not exist | Invalid ID or subscription was cancelled |
+| `5` | `NotOwner` | Caller is not the subscription owner | Trying to modify someone else's subscription |
+| `6` | `LimitExceeded` | Owner reached max subscription limit | Creating more subscriptions than `max_per_owner` allows |
+| `7` | `TtlExceeded` | Requested TTL exceeds maximum allowed | Setting `ttl_ledgers` higher than `max_ttl` |
+| `8` | `Paused` | Protocol is paused by admin | Trying to create subscriptions while paused |
+| `9` | `Expired` | Subscription TTL has passed | Attempting to resume an expired subscription |
+| `10` | `TooManyTopics` | Topics vector exceeds limit of 10 | Providing more than 10 topic filters |
+| `11` | `EmptyEndpoint` | Endpoint reference is empty | Providing zero-length `endpoint_ref` |
+
+### Client error handling examples
+
+**JavaScript/TypeScript:**
+
+```javascript
+import * as StellarSdk from '@stellar/stellar-sdk';
+
+try {
+  const result = await contract.call('subscribe', 
+    owner, 
+    watchedContract, 
+    topics, 
+    channel, 
+    endpointRef, 
+    ttlLedgers
+  );
+  console.log('Subscription created:', result);
+} catch (error) {
+  if (error.message.includes('Error(Contract, #6)')) {
+    console.error('Subscription limit reached. Cancel an existing subscription first.');
+  } else if (error.message.includes('Error(Contract, #8)')) {
+    console.error('Protocol is paused. Try again later.');
+  } else if (error.message.includes('Error(Contract, #10)')) {
+    console.error('Too many topics. Maximum is 10.');
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+```
+
+**Rust:**
+
+```rust
+use stellarnotify_contract::NotifyError;
+
+match contract.subscribe(&owner, &watched, &topics, channel, &endpoint, ttl) {
+    Ok(sub_id) => println!("Created subscription {}", sub_id),
+    Err(NotifyError::LimitExceeded) => {
+        eprintln!("Subscription limit reached");
+    }
+    Err(NotifyError::Paused) => {
+        eprintln!("Protocol is paused");
+    }
+    Err(NotifyError::TooManyTopics) => {
+        eprintln!("Too many topics (max 10)");
+    }
+    Err(e) => eprintln!("Error: {:?}", e),
+}
+```
+
+### Best practices
+
+- **Always check return values** — even read-only functions like `get_sub()` can fail
+- **Handle `SubNotFound` gracefully** — subscriptions may be cancelled by their owners at any time
+- **Respect rate limits** — check `get_config()` to retrieve current `max_per_owner` before creating subscriptions
+- **Validate inputs client-side** — prevent `TooManyTopics` and `EmptyEndpoint` errors by checking before submission
+- **Monitor TTL expiry** — use `check_expiring_soon()` to notify users proactively about upcoming expirations
+
 ## Project structure
 
 ```
