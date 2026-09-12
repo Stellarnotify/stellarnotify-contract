@@ -267,6 +267,22 @@ impl StellarNotifyContract {
         storage::search_by_topic(&env, &topic, include_empty, max_id)
     }
 
+    /// Check for subscriptions expiring within a specified threshold.
+    ///
+    /// Returns subscription IDs owned by the specified address that will expire
+    /// within the given number of ledgers. Permanent subscriptions (expires_at = 0)
+    /// are excluded from results.
+    ///
+    /// # Parameters
+    /// - `owner`             — wallet address to check subscriptions for.
+    /// - `threshold_ledgers` — number of ledgers to look ahead for expiry warnings.
+    ///
+    /// # Returns
+    /// Vector of subscription IDs expiring soon.
+    pub fn check_expiring_soon(env: Env, owner: Address, threshold_ledgers: u32) -> Vec<u64> {
+        storage::check_expiring_soon(&env, &owner, threshold_ledgers)
+    }
+
     /// Return lightweight summaries for all subscriptions owned by a wallet.
     ///
     /// Omits `topics` and `endpoint_ref` to reduce response size.
