@@ -54,7 +54,11 @@ subscribes to on behalf of all registered wallets.
 |---|---|
 | `get_sub(id)` | Full subscription data |
 | `list_by_owner(owner)` | All subscription IDs for a wallet |
+| `list_by_owner_paginated(owner, offset, limit)` | Paginated subscription IDs for a wallet |
 | `list_by_contract(watched)` | All subscription IDs watching a contract |
+| `list_by_contract_paginated(watched, offset, limit)` | Paginated subscription IDs watching a contract |
+| `list_by_topic(topic, include_empty)` | Subscription IDs matching a topic filter |
+| `check_expiring_soon(owner, threshold_ledgers)` | Subscription IDs expiring within threshold |
 | `list_summaries_by_owner(owner)` | Lightweight summaries for dashboard display |
 | `get_config()` | Current protocol configuration |
 | `get_version()` | Contract version string |
@@ -176,6 +180,52 @@ stellar contract invoke \
 ```
 
 Note: Both current and new owners must sign the transfer transaction.
+
+Query subscriptions with pagination:
+
+```bash
+# Get first 10 subscriptions for an owner
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --network testnet \
+  -- list_by_owner_paginated \
+  --owner YOUR_ADDRESS \
+  --offset 0 \
+  --limit 10
+
+# Get next 10 subscriptions (skip first 10)
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --network testnet \
+  -- list_by_owner_paginated \
+  --owner YOUR_ADDRESS \
+  --offset 10 \
+  --limit 10
+```
+
+Search subscriptions by topic:
+
+```bash
+# Find all subscriptions watching for a specific topic
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --network testnet \
+  -- list_by_topic \
+  --topic '<TOPIC_BYTES_HEX>' \
+  --include_empty false
+```
+
+Check for expiring subscriptions:
+
+```bash
+# Find subscriptions expiring in next 100,000 ledgers (~5.7 days)
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --network testnet \
+  -- check_expiring_soon \
+  --owner YOUR_ADDRESS \
+  --threshold_ledgers 100000
+```
 
 ## Client integration examples
 
