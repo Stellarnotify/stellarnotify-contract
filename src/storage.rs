@@ -347,6 +347,39 @@ pub fn search_by_topic(env: &Env, topic: &soroban_sdk::Bytes, include_empty: boo
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Expiry warning check
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Check for subscriptions owned by an address that are expiring soon.
+///
+/// # Parameters
+/// - `env`               — contract environment
+/// - `owner`             — wallet address to check subscriptions for
+/// - `threshold_ledgers` — number of ledgers to look ahead for expiry warnings
+///
+/// # Returns
+/// Vector of subscription IDs that will expire within the threshold.
+/// Permanent subscriptions (expires_at = 0) are excluded.
+pub fn check_expiring_soon(env: &Env, owner: &Address, threshold_ledgers: u32) -> Vec<u64> {
+    let current_ledger = env.ledger().sequence();
+    let warning_ledger = current_ledger + threshold_ledgers;
+    
+    let owner_subs = get_owner_subs(env, owner);
+    let mut expiring: Vec<u64> = Vec::new(env);
+    
+    for id in owner_subs.iter() {
+        if let Ok(sub) = get_sub(env, id) {
+            // Skip permanent subscriptions (expires_at = 0)
+            if sub.expires_at > 0 && sub.expires_at <= warning_ledger {
+                expiring.push_back(id);
+            }
+        }
+    }
+    
+    expiring
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Protocol config
 // ─────────────────────────────────────────────────────────────────────────────
 
