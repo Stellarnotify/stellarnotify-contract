@@ -39,6 +39,14 @@ pub fn next_id(env: &Env) -> u64 {
     next
 }
 
+/// Get the current subscription ID counter without incrementing.
+pub fn get_current_id(env: &Env) -> u64 {
+    env.storage()
+        .instance()
+        .get(&DataKey::SubCounter)
+        .unwrap_or(0u64)
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Individual subscription CRUD
 // ─────────────────────────────────────────────────────────────────────────────
@@ -297,6 +305,45 @@ pub fn to_summary(id: u64, sub: &crate::types::Subscription) -> crate::types::Su
         channel: sub.channel.clone(),
         expires_at: sub.expires_at,
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Topic-based subscription search
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Search for subscription IDs that match a given topic.
+///
+/// # Parameters
+/// - `env`              — contract environment
+/// - `topic`            — topic bytes to search for
+/// - `include_empty`    — if true, also return subscriptions with empty topics vectors
+/// - `max_sub_id`       — maximum subscription ID to scan (from counter)
+///
+/// # Returns
+/// Vector of subscription IDs that have the topic in their topics vector,
+/// or have an empty topics vector if `include_empty` is true.
+pub fn search_by_topic(env: &Env, topic: &soroban_sdk::Bytes, include_empty: bool, max_sub_id: u64) -> Vec<u64> {
+    let mut results: Vec<u64> = Vec::new(env);
+    
+    // Iterate through all possible subscription IDs up to the counter
+    for id in 1..=max_sub_id {
+        if let Ok(sub) = get_sub(env, id) {
+            // Check if topics vector is empty
+            if sub.topics.is_empty() && include_empty {
+                results.push_back(id);
+            } else {
+                // Check if topic exists in the topics vector
+                for sub_topic in sub.topics.iter() {
+                    if &sub_topic == topic {
+                        results.push_back(id);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    results
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
