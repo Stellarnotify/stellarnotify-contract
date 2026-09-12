@@ -220,9 +220,67 @@ impl StellarNotifyContract {
         storage::get_owner_subs(&env, &owner)
     }
 
+    /// Return paginated subscription IDs owned by a wallet.
+    ///
+    /// # Parameters
+    /// - `owner`  — wallet address to query.
+    /// - `offset` — number of items to skip.
+    /// - `limit`  — maximum number of items to return.
+    ///
+    /// # Returns
+    /// A subset of subscription IDs based on pagination parameters.
+    pub fn list_by_owner_paginated(env: Env, owner: Address, offset: u32, limit: u32) -> Vec<u64> {
+        storage::get_owner_subs_paginated(&env, &owner, offset, limit)
+    }
+
     /// Return all subscription IDs watching a given contract.
     pub fn list_by_contract(env: Env, watched: Address) -> Vec<u64> {
         storage::get_watcher_subs(&env, &watched)
+    }
+
+    /// Return paginated subscription IDs watching a given contract.
+    ///
+    /// # Parameters
+    /// - `watched` — contract address to query.
+    /// - `offset`  — number of items to skip.
+    /// - `limit`   — maximum number of items to return.
+    ///
+    /// # Returns
+    /// A subset of subscription IDs based on pagination parameters.
+    pub fn list_by_contract_paginated(env: Env, watched: Address, offset: u32, limit: u32) -> Vec<u64> {
+        storage::get_watcher_subs_paginated(&env, &watched, offset, limit)
+    }
+
+    /// Search for subscriptions by topic filter.
+    ///
+    /// Returns subscription IDs that include the specified topic in their topics vector.
+    /// If `include_empty` is true, also includes subscriptions with empty topics vectors.
+    ///
+    /// # Parameters
+    /// - `topic`         — topic bytes to search for.
+    /// - `include_empty` — if true, include subscriptions with empty topics vectors.
+    ///
+    /// # Returns
+    /// Vector of subscription IDs matching the topic filter.
+    pub fn list_by_topic(env: Env, topic: Bytes, include_empty: bool) -> Vec<u64> {
+        let max_id = storage::get_current_id(&env);
+        storage::search_by_topic(&env, &topic, include_empty, max_id)
+    }
+
+    /// Check for subscriptions expiring within a specified threshold.
+    ///
+    /// Returns subscription IDs owned by the specified address that will expire
+    /// within the given number of ledgers. Permanent subscriptions (expires_at = 0)
+    /// are excluded from results.
+    ///
+    /// # Parameters
+    /// - `owner`             — wallet address to check subscriptions for.
+    /// - `threshold_ledgers` — number of ledgers to look ahead for expiry warnings.
+    ///
+    /// # Returns
+    /// Vector of subscription IDs expiring soon.
+    pub fn check_expiring_soon(env: Env, owner: Address, threshold_ledgers: u32) -> Vec<u64> {
+        storage::check_expiring_soon(&env, &owner, threshold_ledgers)
     }
 
     /// Return lightweight summaries for all subscriptions owned by a wallet.
