@@ -251,6 +251,22 @@ impl StellarNotifyContract {
         storage::get_watcher_subs_paginated(&env, &watched, offset, limit)
     }
 
+    /// Search for subscriptions by topic filter.
+    ///
+    /// Returns subscription IDs that include the specified topic in their topics vector.
+    /// If `include_empty` is true, also includes subscriptions with empty topics vectors.
+    ///
+    /// # Parameters
+    /// - `topic`         — topic bytes to search for.
+    /// - `include_empty` — if true, include subscriptions with empty topics vectors.
+    ///
+    /// # Returns
+    /// Vector of subscription IDs matching the topic filter.
+    pub fn list_by_topic(env: Env, topic: Bytes, include_empty: bool) -> Vec<u64> {
+        let max_id = storage::get_current_id(&env);
+        storage::search_by_topic(&env, &topic, include_empty, max_id)
+    }
+
     /// Return lightweight summaries for all subscriptions owned by a wallet.
     ///
     /// Omits `topics` and `endpoint_ref` to reduce response size.
