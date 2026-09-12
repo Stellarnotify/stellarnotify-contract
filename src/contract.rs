@@ -220,9 +220,35 @@ impl StellarNotifyContract {
         storage::get_owner_subs(&env, &owner)
     }
 
+    /// Return paginated subscription IDs owned by a wallet.
+    ///
+    /// # Parameters
+    /// - `owner`  — wallet address to query.
+    /// - `offset` — number of items to skip.
+    /// - `limit`  — maximum number of items to return.
+    ///
+    /// # Returns
+    /// A subset of subscription IDs based on pagination parameters.
+    pub fn list_by_owner_paginated(env: Env, owner: Address, offset: u32, limit: u32) -> Vec<u64> {
+        storage::get_owner_subs_paginated(&env, &owner, offset, limit)
+    }
+
     /// Return all subscription IDs watching a given contract.
     pub fn list_by_contract(env: Env, watched: Address) -> Vec<u64> {
         storage::get_watcher_subs(&env, &watched)
+    }
+
+    /// Return paginated subscription IDs watching a given contract.
+    ///
+    /// # Parameters
+    /// - `watched` — contract address to query.
+    /// - `offset`  — number of items to skip.
+    /// - `limit`   — maximum number of items to return.
+    ///
+    /// # Returns
+    /// A subset of subscription IDs based on pagination parameters.
+    pub fn list_by_contract_paginated(env: Env, watched: Address, offset: u32, limit: u32) -> Vec<u64> {
+        storage::get_watcher_subs_paginated(&env, &watched, offset, limit)
     }
 
     /// Return lightweight summaries for all subscriptions owned by a wallet.
